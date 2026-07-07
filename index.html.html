@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>開刀房財產盤點</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.x/dist/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+// ══════════════════════════════════════════════
+//  ★ 請將下方換成您自己的 Firebase 設定 ★
+// ══════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey:            "AIzaSyBf7Of7ZQW3o_J3P0CXwiOCeqRsqqe-I4c",
+  authDomain:        "or-checklist-9208e.firebaseapp.com",
+  projectId:         "or-checklist-9208e",
+  storageBucket:     "or-checklist-9208e.firebasestorage.app",
+  messagingSenderId: "698322497360",
+  appId:             "1:698322497360:web:1c157351862511a5e40655",
+  measurementId:     "G-P1TR81XRY9"
+};
+// ══════════════════════════════════════════════
+
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+// 把 db 和 Firestore 函式掛到 window，讓下方 JS 使用
+window._db = db;
+window._fsAdd    = addDoc;
+window._fsColl   = collection;
+window._fsQuery  = query;
+window._fsGetDoc = getDocs;
+window._fsOrder  = orderBy;
+window._fsLimit  = limit;
+window._firebaseReady = true;
+console.log('Firebase 已連線');
+</script>
+<style>
+:root{
+  --blue:#1e4d8c;--blue-light:#2563eb;--blue-dark:#132f56;
+  --green:#16a34a;--amber:#d97706;--red:#dc2626;
+  --bg:#f1f5f9;--card:#ffffff;--border:#e2e8f0;
+  --text:#0f172a;--text2:#475569;--text3:#94a3b8;
+  --radius:14px;
+  --shadow:0 1px 3px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.06);
+  --shadow-lg:0 8px 32px rgba(0,0,0,.12);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',sans-serif;background:var(--bg);min-height:100vh;color:var(--text)}
+.app{max-width:430px;margin:0 auto;background:var(--bg);min-height:100vh;display:flex;flex-direction:column}
+.topbar{background:linear-gradient(135deg,var(--blue-dark),var(--blue));color:#fff;flex-shrink:0}
+.topbar-inner{padding:16px 18px 14px;display:flex;align-items:center;justify-content:space-between}
+.topbar-brand{display:flex;align-items:center;gap:10px}
+.brand-icon{width:36px;height:36px;background:rgba(255,255,255,.15);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.brand-text .t1{font-size:15px;font-weight:700}
+.brand-text .t2{font-size:11px;opacity:.65;margin-top:1px}
+.scan-fab{background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:10px;padding:8px 13px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px}
+
+/* db 狀態小點 */
+.db-dot{width:8px;height:8px;border-radius:50%;background:#94a3b8;display:inline-block;margin-right:5px;transition:background .3s}
+.db-dot.ok{background:#4ade80}
+.db-dot.err{background:#f87171}
+
+.tab-bar{display:flex;background:var(--card);border-bottom:1px solid var(--border);flex-shrink:0;padding:0 4px}
+.tab{flex:1;padding:12px 4px 10px;text-align:center;font-size:11px;color:var(--text3);cursor:pointer;border-bottom:2.5px solid transparent;font-weight:600;letter-spacing:.3px;display:flex;flex-direction:column;align-items:center;gap:3px}
+.tab i{font-size:18px}
+.tab.on{color:var(--blue);border-bottom-color:var(--blue)}
+.page{display:none;padding:16px;overflow-y:auto;flex:1}
+.page.on{display:block}
+
+/* Upload */
+.upload-hero{text-align:center;padding:28px 16px 20px}
+.upload-hero-icon{width:72px;height:72px;background:linear-gradient(135deg,#dbeafe,#bfdbfe);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 14px;color:var(--blue)}
+.upload-hero h2{font-size:18px;font-weight:700;margin-bottom:6px}
+.upload-hero p{font-size:13px;color:var(--text2);line-height:1.6}
+.upload-zone{border:2px dashed #cbd5e1;border-radius:var(--radius);padding:28px 16px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:12px;background:var(--card)}
+.upload-zone:active,.upload-zone.drag{border-color:var(--blue);background:#eff6ff}
+.upload-zone input{display:none}
+.upload-result{background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1px solid #86efac;border-radius:var(--radius);padding:14px 16px;margin-bottom:14px;display:none;align-items:center;gap:12px}
+.upload-result.show{display:flex}
+.ur-icon{width:36px;height:36px;background:#16a34a;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;flex-shrink:0}
+.ur-title{font-size:13px;font-weight:700;color:#14532d;margin-bottom:2px}
+.ur-sub{font-size:11px;color:#166534;opacity:.85}
+.start-btn{width:100%;padding:15px;background:linear-gradient(135deg,var(--blue),var(--blue-dark));color:#fff;border:none;border-radius:var(--radius);font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(30,77,140,.35)}
+.start-btn:disabled{opacity:.35;cursor:not-allowed;box-shadow:none}
+
+/* Checklist */
+.toolbar{display:flex;gap:8px;margin-bottom:12px;align-items:center}
+.area-sel{flex:1;padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;background:var(--card);color:var(--text);font-weight:500;box-shadow:var(--shadow)}
+.change-btn{padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;background:var(--card);cursor:pointer;font-size:13px;color:var(--text2);box-shadow:var(--shadow);white-space:nowrap;display:flex;align-items:center;gap:5px}
+.search-wrap{position:relative;margin-bottom:12px}
+.search-wrap i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:16px;pointer-events:none}
+.search-box{width:100%;padding:10px 12px 10px 36px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;background:var(--card);color:var(--text);box-shadow:var(--shadow)}
+.prog-card{background:var(--card);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;box-shadow:var(--shadow)}
+.prog-numbers{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:10px}
+.prog-count{font-size:24px;font-weight:800;color:var(--blue);line-height:1}
+.prog-total{font-size:13px;color:var(--text3);margin-bottom:2px}
+.prog-pct{font-size:13px;font-weight:700;color:var(--blue)}
+.prog-bar{height:8px;background:#e2e8f0;border-radius:99px;overflow:hidden}
+.prog-fill{height:8px;background:linear-gradient(90deg,var(--blue-light),var(--blue));border-radius:99px;transition:width .4s}
+.anom-pill{display:inline-flex;align-items:center;gap:4px;background:#fef3c7;color:#92400e;font-size:11px;padding:3px 8px;border-radius:99px;font-weight:600;margin-top:8px}
+.item-card{background:var(--card);border-radius:var(--radius);margin-bottom:8px;overflow:hidden;box-shadow:var(--shadow);border:1.5px solid transparent;transition:border-color .2s}
+.item-card.checked{border-color:#bbf7d0}
+.item-row{display:flex;align-items:center;padding:13px 14px;gap:12px;cursor:pointer}
+.item-row.flash{animation:flashGreen .7s ease}
+@keyframes flashGreen{0%{background:#dcfce7}100%{background:transparent}}
+.chk{width:24px;height:24px;border-radius:50%;border:2px solid #cbd5e1;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;color:transparent;font-size:13px}
+.chk.on{background:var(--green);border-color:var(--green);color:#fff;box-shadow:0 2px 8px rgba(22,163,74,.3)}
+.item-body{flex:1;min-width:0}
+.item-name{font-size:14px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item-name.done{color:var(--text3);text-decoration:line-through}
+.item-meta{font-size:11px;color:var(--text3);margin-top:2px;font-family:monospace}
+.note-btn{width:30px;height:30px;border-radius:8px;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text3);font-size:16px;flex-shrink:0}
+.note-btn.has{color:var(--amber);border-color:#fbbf24;background:#fffbeb}
+.loc-btn{width:30px;height:30px;border-radius:8px;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text3);font-size:15px;flex-shrink:0}
+.loc-btn.has{color:#0ea5e9;border-color:#7dd3fc;background:#f0f9ff}
+.loc-tag{font-size:10px;color:#0ea5e9;background:#f0f9ff;border:1px solid #bae6fd;border-radius:6px;padding:2px 6px;margin-top:3px;display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.footer-pad{padding:12px 0 24px}
+.sig-card{background:var(--card);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow);border:1.5px dashed var(--border);cursor:pointer;display:flex;align-items:center;gap:12px}
+.sig-card.done{border-style:solid;border-color:#86efac;background:#f0fdf4}
+.sig-avatar{width:36px;height:36px;border-radius:10px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--text3);flex-shrink:0}
+.sig-card.done .sig-avatar{background:#dcfce7;color:var(--green)}
+.sig-text .s1{font-size:13px;font-weight:600;color:var(--text)}
+.sig-text .s2{font-size:11px;color:var(--text3);margin-top:1px}
+.name-inp{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:14px;margin-bottom:10px;background:var(--card);box-shadow:var(--shadow)}
+.sub-btn{width:100%;padding:15px;background:linear-gradient(135deg,var(--blue),var(--blue-dark));color:#fff;border:none;border-radius:var(--radius);font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(30,77,140,.35)}
+.sub-btn:disabled{opacity:.35;cursor:not-allowed;box-shadow:none}
+
+/* Modal */
+.modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.6);display:none;align-items:flex-end;justify-content:center;z-index:200;backdrop-filter:blur(4px)}
+.modal-bg.show{display:flex}
+.modal{background:var(--card);border-radius:20px 20px 0 0;padding:20px 18px 36px;width:100%;max-width:430px;animation:slideUp .25s ease}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-handle{width:40px;height:4px;background:#e2e8f0;border-radius:2px;margin:0 auto 16px}
+.modal-title{font-size:15px;font-weight:700;margin-bottom:12px}
+.modal textarea{width:100%;border:1.5px solid var(--border);border-radius:12px;padding:12px;font-size:14px;resize:none;height:90px;font-family:inherit;background:#f8fafc}
+.modal-btns{display:flex;gap:8px;margin-top:12px}
+.modal-btns button{flex:1;padding:12px;border-radius:12px;border:1.5px solid var(--border);font-size:14px;cursor:pointer;background:var(--card);font-weight:600}
+.modal-btns .pri{background:var(--blue);color:#fff;border-color:var(--blue)}
+
+/* Done */
+.done-wrap{display:none;flex-direction:column;align-items:center;padding:40px 20px 24px;text-align:center;gap:14px}
+.done-wrap.show{display:flex}
+.done-lottie{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#dcfce7,#bbf7d0);display:flex;align-items:center;justify-content:center;font-size:40px;animation:popIn .4s cubic-bezier(.34,1.56,.64,1)}
+@keyframes popIn{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+.done-title{font-size:20px;font-weight:800}
+.done-sub{font-size:13px;color:var(--text2);line-height:1.8;white-space:pre-line;background:var(--card);border-radius:var(--radius);padding:14px 18px;width:100%;text-align:left;box-shadow:var(--shadow)}
+.dl-btn{width:100%;padding:15px;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border:none;border-radius:var(--radius);font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(22,163,74,.35)}
+.reset-btn{width:100%;padding:13px;background:var(--card);color:var(--text2);border:1.5px solid var(--border);border-radius:var(--radius);font-size:14px;font-weight:600;cursor:pointer}
+
+/* Scan */
+.scan-hero{background:linear-gradient(135deg,var(--blue-dark),var(--blue));border-radius:var(--radius);padding:16px;margin-bottom:14px;color:#fff}
+.scan-hero-title{font-size:13px;font-weight:700;opacity:.8;letter-spacing:.5px;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.video-wrap{width:100%;aspect-ratio:4/3;background:#000;border-radius:12px;overflow:hidden;position:relative}
+video{width:100%;height:100%;object-fit:cover}
+.scan-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.scan-frame{width:56%;aspect-ratio:1;position:relative}
+.sc{position:absolute;width:20px;height:20px;border-color:#fff;border-style:solid;border-width:0}
+.sc.tl{top:0;left:0;border-top-width:3px;border-left-width:3px;border-radius:4px 0 0 0}
+.sc.tr{top:0;right:0;border-top-width:3px;border-right-width:3px;border-radius:0 4px 0 0}
+.sc.bl{bottom:0;left:0;border-bottom-width:3px;border-left-width:3px;border-radius:0 0 0 4px}
+.sc.br{bottom:0;right:0;border-bottom-width:3px;border-right-width:3px;border-radius:0 0 4px 0}
+.scan-line{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.9),transparent);animation:scanline 2s ease-in-out infinite}
+@keyframes scanline{0%,100%{top:5%}50%{top:90%}}
+.scan-status{margin-top:10px;font-size:13px;text-align:center;opacity:.8;min-height:18px}
+.scan-btn{width:100%;margin-top:10px;padding:13px;border-radius:12px;border:1.5px solid rgba(255,255,255,.3);background:rgba(255,255,255,.12);font-size:14px;cursor:pointer;color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:600}
+.scan-btn.active{background:rgba(255,255,255,.25);border-color:rgba(255,255,255,.5)}
+.manual-card{background:var(--card);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);margin-bottom:10px}
+.manual-label{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px}
+.manual-row{display:flex;gap:8px}
+.manual-row input{flex:1;padding:11px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;background:#f8fafc}
+.manual-row button{padding:11px 16px;border-radius:10px;border:none;background:var(--blue);color:#fff;font-size:14px;cursor:pointer;font-weight:600}
+.scan-count-pill{display:flex;align-items:center;justify-content:center;gap:6px;background:var(--card);border-radius:99px;padding:7px 16px;font-size:12px;color:var(--text2);font-weight:600;margin-bottom:10px;box-shadow:var(--shadow);width:fit-content;margin-left:auto;margin-right:auto}
+
+/* Toast */
+.toast-wrap{position:fixed;top:16px;left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:398px;z-index:300;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{border-radius:14px;padding:12px 14px;font-size:13px;display:flex;align-items:flex-start;gap:10px;box-shadow:var(--shadow-lg);animation:toastIn .25s cubic-bezier(.34,1.56,.64,1);pointer-events:all;border:1px solid transparent}
+@keyframes toastIn{from{opacity:0;transform:translateY(-12px) scale(.95)}to{opacity:1;transform:none}}
+.toast.ok{background:#f0fdf4;border-color:#86efac;color:#14532d}
+.toast.warn{background:#fffbeb;border-color:#fde68a;color:#78350f}
+.toast.err{background:#fef2f2;border-color:#fca5a5;color:#7f1d1d}
+.toast-icon{font-size:18px;flex-shrink:0;margin-top:1px}
+.toast-body{flex:1}
+.toast-body .t1{font-weight:700;margin-bottom:1px}
+.toast-body .t2{font-size:12px;opacity:.8}
+.toast-close{background:none;border:none;font-size:16px;cursor:pointer;opacity:.4;color:inherit;padding:0;line-height:1}
+
+/* History */
+.hist-empty{padding:48px 20px;text-align:center;color:var(--text3)}
+.hist-empty i{font-size:40px;margin-bottom:12px;display:block;opacity:.4}
+.hist-card{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:10px;box-shadow:var(--shadow);border-left:4px solid var(--border)}
+.hist-card.ok{border-left-color:var(--green)}
+.hist-card.warn{border-left-color:var(--amber)}
+.hist-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.hist-date{font-size:13px;font-weight:700}
+.hist-area{font-size:11px;color:var(--text3);margin-top:2px}
+.pill{font-size:11px;padding:3px 9px;border-radius:99px;font-weight:700}
+.pill.ok{background:#dcfce7;color:#166534}
+.pill.warn{background:#fef3c7;color:#92400e}
+.hist-meta{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2);margin-bottom:6px}
+.hist-anoms{font-size:12px;color:var(--amber);margin-bottom:8px;line-height:1.6}
+.hist-dl{padding:8px 13px;border-radius:9px;border:1.5px solid var(--border);background:#f8fafc;font-size:12px;cursor:pointer;color:var(--text2);font-weight:600;display:inline-flex;align-items:center;gap:5px}
+
+/* 儲存中 spinner */
+.saving-bar{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px 14px;font-size:12px;color:var(--blue);display:none;align-items:center;gap:8px;margin-bottom:10px}
+.saving-bar.show{display:flex}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{width:14px;height:14px;border:2px solid #bfdbfe;border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="topbar-brand">
+      <div class="brand-icon">🏥</div>
+      <div class="brand-text">
+        <div class="t1">開刀房財產盤點</div>
+        <div class="t2" id="topdate"></div>
+      </div>
+    </div>
+    <button class="scan-fab" onclick="showTab('scan')">
+      <span class="db-dot" id="db-dot"></span>
+      <i class="ti ti-scan" style="font-size:15px"></i>掃條碼
+    </button>
+  </div>
+</div>
+
+<div class="tab-bar">
+  <div class="tab on" onclick="showTab('check')"><i class="ti ti-clipboard-check"></i>盤點清單</div>
+  <div class="tab" onclick="showTab('scan')"><i class="ti ti-scan"></i>掃描</div>
+  <div class="tab" onclick="showTab('hist')"><i class="ti ti-history"></i>歷史</div>
+</div>
+
+<!-- 盤點頁 -->
+<div id="pg-check" class="page on">
+  <div id="modal-area" class="modal-bg">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div class="modal-title" id="modal-title">異常備註</div>
+      <textarea id="modal-ta" placeholder="描述異常情況（數量不符、外觀損壞、找不到等）…"></textarea>
+      <div class="modal-btns">
+        <button onclick="closeModal()">取消</button>
+        <button class="pri" onclick="saveNote()">儲存備註</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 位置備註 Modal -->
+  <div id="loc-modal-area" class="modal-bg">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div class="modal-title" id="loc-modal-title">📍 位置備註</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:8px">記錄此財產放置位置，下次開啟仍會保留</div>
+      <textarea id="loc-modal-ta" placeholder="例如：手術室A 第3層架、護理站抽屜2…"></textarea>
+      <div class="modal-btns">
+        <button onclick="closeLocModal()">取消</button>
+        <button class="pri" onclick="saveLocNote()">儲存位置</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="upload-section">
+    <div class="upload-hero">
+      <div class="upload-hero-icon"><i class="ti ti-building-hospital"></i></div>
+      <h2>財產盤點系統</h2>
+      <p>請先上傳最新的財產報表<br>系統會自動讀取保管人並分配品項</p>
+    </div>
+    <div class="upload-zone" id="upload-zone"
+      onclick="document.getElementById('file-inp').click()"
+      ondragover="event.preventDefault();this.classList.add('drag')"
+      ondragleave="this.classList.remove('drag')"
+      ondrop="event.preventDefault();this.classList.remove('drag');handleFile(event.dataTransfer.files[0])">
+      <input type="file" id="file-inp" accept=".xls,.xlsx" onchange="handleFile(this.files[0])">
+      <i class="ti ti-file-spreadsheet" style="font-size:32px;color:#94a3b8;display:block;margin-bottom:8px"></i>
+      <div style="font-size:14px;font-weight:600;color:var(--text2);margin-bottom:4px">點此上傳財產報表</div>
+      <div style="font-size:12px;color:var(--text3)">支援 .xls / .xlsx 格式</div>
+    </div>
+    <div class="upload-result" id="upload-result">
+      <div class="ur-icon"><i class="ti ti-check"></i></div>
+      <div><div class="ur-title" id="ur-title"></div><div class="ur-sub" id="ur-sub"></div></div>
+    </div>
+    <!-- 護理師選人區 -->
+    <div id="nurse-section" style="display:none;margin-bottom:14px">
+      <div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:10px;display:flex;align-items:center;gap:6px">
+        <i class="ti ti-users" style="font-size:16px;color:var(--blue)"></i>請選擇您的姓名開始盤點
+      </div>
+      <div style="position:relative;margin-bottom:10px">
+        <i class="ti ti-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:15px;pointer-events:none"></i>
+        <input id="nurse-search" placeholder="搜尋姓名…" oninput="filterNurses()"
+          style="width:100%;padding:10px 12px 10px 34px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;background:var(--card);color:var(--text)">
+      </div>
+      <div id="nurse-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;max-height:300px;overflow-y:auto"></div>
+    </div>
+    <button class="start-btn" id="start-btn" disabled onclick="startChecklist()">
+      <i class="ti ti-clipboard-check" style="font-size:18px"></i>開始盤點
+    </button>
+  </div>
+
+  <div id="main-area" style="display:none">
+    <div class="toolbar">
+      <div style="flex:1;background:var(--card);border-radius:10px;padding:10px 14px;box-shadow:var(--shadow);display:flex;align-items:center;gap:8px;overflow:hidden">
+        <i class="ti ti-user-circle" style="font-size:18px;color:var(--blue);flex-shrink:0"></i>
+        <span style="font-size:14px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="current-nurse-name">—</span>
+        <span style="font-size:11px;color:var(--text3);flex-shrink:0" id="current-nurse-count"></span>
+      </div>
+      <button class="change-btn" onclick="showUpload()"><i class="ti ti-refresh" style="font-size:14px"></i>換人</button>
+    </div>
+    <div class="search-wrap">
+      <i class="ti ti-search"></i>
+      <input class="search-box" placeholder="搜尋品項或財產編號…" id="search-inp" oninput="filterItems()">
+    </div>
+    <div class="prog-card">
+      <div class="prog-numbers">
+        <div>
+          <div class="prog-count" id="prog-done">0</div>
+          <div class="prog-total">已完成 / <span id="prog-total">0</span> 項</div>
+        </div>
+        <div class="prog-pct" id="prog-pct">0%</div>
+      </div>
+      <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+      <div id="anom-ct"></div>
+    </div>
+    <div id="item-list"></div>
+    <div class="footer-pad">
+      <div class="sig-card" id="sig-card" onclick="clickSig()">
+        <div class="sig-avatar" id="sig-avatar"><i class="ti ti-user"></i></div>
+        <div class="sig-text">
+          <div class="s1" id="sig-s1">點班人員簽名確認</div>
+          <div class="s2" id="sig-s2">請輸入姓名後完成確認</div>
+        </div>
+      </div>
+      <input class="name-inp" id="name-inp" placeholder="輸入姓名後按 Enter 確認" style="display:none"
+        onkeydown="if(event.key==='Enter')saveSig()" onblur="saveSig()">
+      <div class="saving-bar" id="saving-bar"><div class="spinner"></div>正在儲存至雲端資料庫…</div>
+      <button class="sub-btn" id="sub-btn" disabled onclick="doSubmit()">
+        <i class="ti ti-send" style="font-size:17px"></i>送出並下載 Excel
+      </button>
+    </div>
+  </div>
+
+  <div id="done-wrap" class="done-wrap">
+    <div class="done-lottie">✓</div>
+    <div class="done-title" id="done-title">盤點完成</div>
+    <div class="done-sub" id="done-sub"></div>
+    <button class="dl-btn" onclick="downloadExcel()">
+      <i class="ti ti-file-spreadsheet" style="font-size:18px"></i>下載 Excel 盤點記錄
+    </button>
+    <button class="reset-btn" onclick="resetApp()">重新盤點 / 換報表</button>
+  </div>
+</div>
+
+<!-- 掃描頁 -->
+<div id="pg-scan" class="page">
+  <div class="scan-hero">
+    <div class="scan-hero-title"><i class="ti ti-barcode" style="font-size:16px"></i>財產條碼掃描</div>
+
+    <!-- 方法一：手機原生相機（最穩定） -->
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;font-weight:700;opacity:.7;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">
+        📱 方法一：手機相機（免權限）
+      </div>
+      <label style="display:block;width:100%;padding:14px;border-radius:12px;border:1.5px solid rgba(255,255,255,.3);background:rgba(255,255,255,.15);font-size:14px;cursor:pointer;color:#fff;text-align:center;font-weight:600">
+        <i class="ti ti-camera" style="font-size:18px;margin-right:6px;vertical-align:-3px"></i>開啟相機掃描條碼
+        <input type="file" accept="image/*" capture="environment" style="display:none" onchange="scanFromPhoto(this)">
+      </label>
+      <div style="font-size:11px;opacity:.65;text-align:center;margin-top:6px">點上方按鈕 → 對準條碼拍照 → 自動辨識</div>
+    </div>
+
+    <!-- 方法二：內嵌相機（需 HTTPS） -->
+    <div>
+      <div style="font-size:11px;font-weight:700;opacity:.7;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">
+        🎥 方法二：即時掃描（需 HTTPS）
+      </div>
+      <div class="video-wrap" id="video-wrap" style="display:none">
+        <video id="preview" playsinline autoplay muted></video>
+        <div class="scan-overlay">
+          <div class="scan-frame">
+            <div class="sc tl"></div><div class="sc tr"></div>
+            <div class="sc bl"></div><div class="sc br"></div>
+            <div class="scan-line"></div>
+          </div>
+        </div>
+      </div>
+      <div class="scan-status" id="scan-status">點下方按鈕開啟即時掃描</div>
+      <button class="scan-btn" id="scan-btn" onclick="toggleScan()">
+        <i class="ti ti-scan" style="font-size:16px"></i><span id="scan-btn-txt">開啟即時掃描</span>
+      </button>
+    </div>
+  </div>
+  <div class="scan-count-pill" id="scan-count">
+    <i class="ti ti-circle-check" style="font-size:14px;color:var(--green)"></i>本次已掃描 0 件
+  </div>
+
+  <!-- 外接掃描器 / 手動輸入 -->
+  <div class="manual-card">
+    <div class="manual-label"><i class="ti ti-keyboard" style="font-size:12px"></i> 外接掃描器 / 手動輸入</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:8px">
+      使用藍牙或有線條碼掃描器時，點一下輸入框再掃即可自動送出
+    </div>
+    <div class="manual-row">
+      <input id="manual-inp" placeholder="掃描器對準後掃，或手動輸入條碼"
+        onkeydown="handleManualKey(event)"
+        oninput="handleManualInput(this.value)"
+        autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+        style="font-size:15px;letter-spacing:1px">
+      <button onclick="manualLookup()">送出</button>
+    </div>
+    <div id="manual-preview" style="font-size:12px;color:var(--text3);margin-top:6px;min-height:16px"></div>
+  </div>
+
+  <!-- 相機不可用提示 -->
+  <div id="camera-hint" style="display:none;background:#fff7ed;border:1px solid #fed7aa;border-radius:var(--radius);padding:12px 14px;font-size:12px;color:#9a3412;line-height:1.6">
+    <b>📷 相機無法使用？</b><br>
+    手機瀏覽器需要 <b>HTTPS</b> 才能使用相機。請確認：<br>
+    1. 用 <b>GitHub Pages 網址</b>（https://...）開啟，不要用本機檔案<br>
+    2. 允許瀏覽器使用相機權限<br>
+    3. 或改用上方的<b>外接條碼掃描器</b>
+  </div>
+</div>
+
+<!-- 歷史頁 -->
+<div id="pg-hist" class="page">
+  <div id="hist-list"></div>
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js"></script>
+<script>
+let RAW={}, LOOKUP={}, state={};
+let currentArea='', searchQ='';
+let currentNoteId=null, currentLocId=null;
+let sigDone=false, sigName='';
+let history=[];
+let scanCount=0, scanning=false, codeReader=null;
+let lastScan='', lastScanTime=0, lastRecord=null;
+let LOCATION_NOTES={};  // { 財產編號: 位置備註 } 永久保存
+
+// ── Firebase 狀態 ──────────────────────────────────
+function checkFirebase(){
+  const dot=document.getElementById('db-dot');
+  if(window._firebaseReady){
+    dot.className='db-dot ok';
+    dot.title='雲端資料庫已連線';
+  } else {
+    dot.className='db-dot err';
+    dot.title='雲端資料庫未連線';
+  }
+}
+setTimeout(()=>{checkFirebase();},2000);
+
+// ── 儲存到 Firebase ────────────────────────────────
+async function saveToFirebase(record){
+  if(!window._firebaseReady || !window._db) return false;
+  try{
+    const col = window._fsColl(window._db, 'checklist_records');
+    // 只存摘要（不存所有品項內容，避免超過 Firestore 1MB 限制）
+    const summary = {
+      time:     record.time,
+      area:     record.area,
+      by:       record.by,
+      total:    record.items.length,
+      checked:  record.items.filter(x=>x.checked).length,
+      anoms:    record.anoms,
+      anomDetails: record.anomDetails,
+      deviceId: getDeviceId(),
+      createdAt: new Date()
+    };
+    await window._fsAdd(col, summary);
+    return true;
+  } catch(e){
+    console.error('Firebase 儲存失敗', e);
+    return false;
+  }
+}
+
+// ── 從 Firebase 讀取歷史（本機的記錄）─────────────
+async function loadFirebaseHistory(){
+  if(!window._firebaseReady || !window._db) return;
+  try{
+    const col  = window._fsColl(window._db, 'checklist_records');
+    const q    = window._fsQuery(col, window._fsOrder('createdAt','desc'), window._fsLimit(30));
+    const snap = await window._fsGetDoc(q);
+    // 只顯示本機的記錄（用 deviceId 比對）
+    const myId = getDeviceId();
+    const fbHistory = [];
+    snap.forEach(doc=>{
+      const d = doc.data();
+      if(d.deviceId === myId){
+        fbHistory.push({
+          time: d.time, area: d.area, by: d.by,
+          anoms: d.anoms, anomDetails: d.anomDetails||[],
+          total: d.total, checked: d.checked,
+          fromCloud: true
+        });
+      }
+    });
+    if(fbHistory.length > 0){
+      // 合併：優先用 localStorage，Firebase 補沒有的
+      const localTimes = new Set(history.map(h=>h.time));
+      fbHistory.forEach(h=>{ if(!localTimes.has(h.time)) history.push(h); });
+      history.sort((a,b)=>b.time.localeCompare(a.time));
+      renderHistory();
+    }
+  }catch(e){ console.warn('讀取 Firebase 歷史失敗', e); }
+}
+
+// 簡易裝置 ID（存在 localStorage）
+function getDeviceId(){
+  let id = localStorage.getItem('or_device_id');
+  if(!id){ id='dev_'+Math.random().toString(36).slice(2,10); localStorage.setItem('or_device_id',id); }
+  return id;
+}
+
+// ── 上傳報表 ──────────────────────────────────────
+// ── 護理師資料 ─────────────────────────────────────
+let NURSES = {};        // { 姓名: [{name,code,unit,qty}, ...] }
+let currentNurse = '';  // 目前選擇的護理師
+let allNurseNames = []; // 全部護理師名單
+
+function handleFile(file){
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+      const sample=rows[0]||{}, keys=Object.keys(sample);
+      const col=name=>keys.find(k=>k.includes(name))||'';
+      const cCode=col('財產編號'),cName=col('名稱'),cKeeper=col('保管人'),cUnit=col('財產單位')||col('單位'),cLoc=col('置放地點')||col('地點');
+      if(!cCode||!cName){alert('找不到「財產編號」或「名稱」欄位');return;}
+
+      // 讀取序號欄位
+      const cSeq=col('財產序號')||col('序號')||'';
+
+      // 以保管人為主要分組，每件獨立一筆
+      const nurses={};
+      rows.forEach(r=>{
+        const name=(r[cName]||'').toString().trim();
+        const code=(r[cCode]||'').toString().trim();
+        const unit=(r[cUnit]||'').toString().trim();
+        const loc=(r[cLoc]||'未分類').toString().trim();
+        const keeper=(r[cKeeper]||'').toString().trim()||loc;
+        const seq=cSeq?(r[cSeq]||'').toString().trim().padStart(6,'0'):'';
+        if(!name||!code)return;
+        if(!nurses[keeper])nurses[keeper]=[];
+        // 每件獨立一筆（用 code+seq 作唯一識別）
+        nurses[keeper].push({name, code, seq, unit, loc,
+          fullCode: seq ? code+seq : code  // 完整條碼 = 財產編號+序號
+        });
+      });
+
+      NURSES=nurses;
+      allNurseNames=Object.keys(nurses).sort();
+
+      // RAW 也改成每件獨立（給條碼 LOOKUP 用）
+      const raw={};
+      rows.forEach(r=>{
+        const loc=(r[cLoc]||'未分類').toString().trim();
+        const name=(r[cName]||'').toString().trim();
+        const code=(r[cCode]||'').toString().trim();
+        const unit=(r[cUnit]||'').toString().trim();
+        const seq=cSeq?(r[cSeq]||'').toString().trim().padStart(6,'0'):'';
+        if(!name||!code)return;
+        if(!raw[loc])raw[loc]=[];
+        raw[loc].push({name, code, seq, unit,
+          fullCode: seq ? code+seq : code
+        });
+      });
+      RAW=raw;
+
+      window._lastFileName=file.name;
+      saveToLocal();
+
+      const ti=Object.values(nurses).reduce((s,a)=>s+a.length,0);
+      document.getElementById('ur-title').textContent='✓ 成功載入「'+file.name+'」';
+      document.getElementById('ur-sub').textContent='共 '+allNurseNames.length+' 位保管人，'+ti+' 件財產';
+      document.getElementById('upload-result').classList.add('show');
+
+      // 顯示護理師選單
+      renderNurseGrid(allNurseNames);
+      document.getElementById('nurse-section').style.display='block';
+      document.getElementById('start-btn').disabled=true; // 要先選人才能開始
+    }catch(err){alert('讀取失敗：'+err.message);}
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function renderNurseGrid(names){
+  const grid=document.getElementById('nurse-grid');
+  grid.innerHTML=names.map(n=>`
+    <div onclick="selectNurse('${n.replace(/'/g,"\'")}',this)"
+      style="padding:12px 10px;background:var(--card);border:1.5px solid var(--border);border-radius:10px;
+             cursor:pointer;text-align:center;font-size:13px;font-weight:600;color:var(--text);
+             transition:all .15s;box-shadow:var(--shadow)">
+      <i class="ti ti-user" style="font-size:16px;color:var(--text3);display:block;margin-bottom:4px"></i>
+      ${n}
+      <div style="font-size:10px;color:var(--text3);margin-top:2px;font-weight:400">${(NURSES[n]||[]).length} 項</div>
+    </div>`).join('');
+}
+
+function filterNurses(){
+  const q=document.getElementById('nurse-search').value.toLowerCase();
+  const filtered=allNurseNames.filter(n=>n.toLowerCase().includes(q));
+  renderNurseGrid(filtered);
+}
+
+function selectNurse(name, el){
+  currentNurse=name;
+  // 視覺反饋：選中的卡片變藍
+  document.querySelectorAll('#nurse-grid > div').forEach(d=>{
+    d.style.borderColor='var(--border)';
+    d.style.background='var(--card)';
+    d.style.color='var(--text)';
+  });
+  if(el){
+    el.style.borderColor='var(--blue)';
+    el.style.background='#eff6ff';
+    el.style.color='var(--blue)';
+  }
+  document.getElementById('start-btn').disabled=false;
+  document.getElementById('start-btn').innerHTML='<i class="ti ti-clipboard-check" style="font-size:18px"></i>開始盤點 — '+name;
+}
+
+function startChecklist(){
+  if(!currentNurse){alert('請先選擇姓名');return;}
+  state={}; LOOKUP=buildLookup();
+  sigDone=false; sigName=currentNurse; scanCount=0;
+
+  // 用護理師名字當 currentArea
+  currentArea=currentNurse;
+
+  // 把護理師品項建成 RAW 格式
+  if(!RAW[currentNurse]){
+    RAW[currentNurse]=NURSES[currentNurse]||[];
+  }
+
+  // 更新頂部顯示
+  document.getElementById('current-nurse-name').textContent=currentNurse;
+  document.getElementById('current-nurse-count').textContent=(NURSES[currentNurse]||[]).length+' 項';
+
+  // 簽名直接用護理師名字
+  document.getElementById('sig-card').className='sig-card done';
+  document.getElementById('sig-avatar').innerHTML='<i class="ti ti-user-check"></i>';
+  document.getElementById('sig-s1').textContent=currentNurse;
+  document.getElementById('sig-s2').textContent='已確認身分 · '+nowStr();
+  sigDone=true;
+
+  document.getElementById('upload-section').style.display='none';
+  document.getElementById('main-area').style.display='block';
+  document.getElementById('done-wrap').classList.remove('show');
+  document.getElementById('name-inp').style.display='none';
+  initState(currentArea); renderList(); updateProgress();
+}
+
+function showUpload(){
+  document.getElementById('main-area').style.display='none';
+  document.getElementById('upload-section').style.display='block';
+  currentNurse='';
+  document.getElementById('start-btn').disabled=true;
+  document.getElementById('start-btn').innerHTML='<i class="ti ti-clipboard-check" style="font-size:18px"></i>開始盤點';
+  if(allNurseNames.length>0){
+    document.getElementById('nurse-section').style.display='block';
+    renderNurseGrid(allNurseNames);
+  }
+}
+
+function resetSigUI(){
+  // 護理師模式：簽名由選人時自動設定，此函式保留相容性
+}
+
+function buildLookup(){
+  const map={};
+  Object.keys(RAW).forEach(area=>{
+    RAW[area].forEach((it,i)=>{
+      const fullCode=(it.fullCode||it.code).trim().toUpperCase();
+      const shortCode=it.code.trim().toUpperCase();
+      const entry={
+        id: area+'_'+(it.fullCode||it.code+'_'+i),
+        area, name:it.name, unit:it.unit,
+        code:it.code, seq:it.seq||'', fullCode:it.fullCode||it.code
+      };
+      // 用完整碼（編號+序號）建索引
+      if(!map[fullCode])map[fullCode]=[];
+      map[fullCode].push(entry);
+      // 若只有8碼（無序號），也建短碼索引
+      if(fullCode===shortCode){
+        if(!map[shortCode])map[shortCode]=[];
+        if(!map[shortCode].find(x=>x.id===entry.id))map[shortCode].push(entry);
+      }
+    });
+  });
+  return map;
+}
+function initState(area){
+  if(!state[area]){
+    // 以護理師姓名查
+    const items = NURSES[area] || RAW[area] || [];
+    state[area]=items.map((it,i)=>({
+      id: area+'_'+(it.fullCode||it.code+'_'+i),
+      name: it.name,
+      code: it.code,
+      seq:  it.seq||'',
+      fullCode: it.fullCode||(it.code),
+      unit: it.unit,
+      checked: false,
+      note: '',
+      scanTime: ''
+    }));
+  }
+}
+function allItems(){return state[currentArea]||[];}
+function filtered(){const q=searchQ.toLowerCase();return allItems().filter(it=>!q||it.name.toLowerCase().includes(q)||it.code.toLowerCase().includes(q));}
+function nowStr(){const n=new Date();return n.getFullYear()+'/'+(n.getMonth()+1)+'/'+n.getDate()+' '+n.getHours()+':'+String(n.getMinutes()).padStart(2,'0');}
+
+function updateProgress(){
+  const all=allItems();
+  const done=all.filter(x=>x.checked).length, total=all.length, pct=total?Math.round(done/total*100):0;
+  document.getElementById('prog-done').textContent=done;
+  document.getElementById('prog-total').textContent=total;
+  document.getElementById('prog-pct').textContent=pct+'%';
+  document.getElementById('prog-fill').style.width=pct+'%';
+  const anoms=all.filter(x=>x.note).length;
+  document.getElementById('anom-ct').innerHTML=anoms?'<div class="anom-pill"><i class="ti ti-alert-triangle" style="font-size:12px"></i>'+anoms+' 項異常</div>':'';
+  document.getElementById('sub-btn').disabled=!(done===total&&sigDone);
+}
+
+function renderList(){
+  const list=document.getElementById('item-list'); const items=filtered(); list.innerHTML='';
+  if(!items.length){list.innerHTML='<div style="padding:32px;text-align:center;color:var(--text3);font-size:13px"><i class="ti ti-search" style="font-size:32px;display:block;margin-bottom:8px;opacity:.4"></i>找不到符合的品項</div>';return;}
+  items.forEach(it=>{
+    const card=document.createElement('div'); card.className='item-card'+(it.checked?' checked':''); card.id='card-'+it.id;
+    const locNote = LOCATION_NOTES[it.code]||'';
+    card.innerHTML=`<div class="item-row" id="row-${it.id}">
+      <div class="chk${it.checked?' on':''}" id="chk-${it.id}" onclick="toggle('${it.id}')">✓</div>
+      <div class="item-body" onclick="toggle('${it.id}')">
+        <div class="item-name${it.checked?' done':''}" id="nm-${it.id}">${it.name}</div>
+        <div class="item-meta">${it.code}${it.seq?' · 序號 '+it.seq:''}${it.unit?' · '+it.unit:''}</div>
+        ${locNote?`<div class="loc-tag" id="lt-${it.id}">📍 ${locNote}</div>`:`<div id="lt-${it.id}"></div>`}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0">
+        <div class="loc-btn${locNote?' has':''}" id="lb-${it.id}" onclick="openLocNote('${it.id}')" title="位置備註">
+          <i class="ti ti-map-pin"></i>
+        </div>
+        <div class="note-btn${it.note?' has':''}" id="nb-${it.id}" onclick="openNote('${it.id}')" title="異常備註">
+          <i class="ti ti-${it.note?'message-dots':'message-circle'}"></i>
+        </div>
+      </div>
+    </div>`;
+    list.appendChild(card);
+  });
+}
+
+function toggle(id){
+  const it=allItems().find(x=>x.id===id); if(!it)return;
+  it.checked=!it.checked;
+  if(it.checked&&!it.scanTime)it.scanTime=nowStr();
+  document.getElementById('chk-'+id).className='chk'+(it.checked?' on':'');
+  document.getElementById('nm-'+id).className='item-name'+(it.checked?' done':'');
+  const card=document.getElementById('card-'+id);
+  if(card)card.className='item-card'+(it.checked?' checked':'');
+  updateProgress();
+}
+
+function openNote(id){
+  currentNoteId=id; const it=allItems().find(x=>x.id===id);
+  document.getElementById('modal-title').textContent='備註：'+it.name;
+  document.getElementById('modal-ta').value=it.note||'';
+  document.getElementById('modal-area').classList.add('show');
+}
+function closeModal(){document.getElementById('modal-area').classList.remove('show');}
+function saveNote(){
+  const val=document.getElementById('modal-ta').value.trim();
+  const it=allItems().find(x=>x.id===currentNoteId); if(it)it.note=val;
+  closeModal();
+  const nb=document.getElementById('nb-'+currentNoteId);
+  if(nb){nb.className='note-btn'+(val?' has':'');nb.innerHTML='<i class="ti ti-'+(val?'message-dots':'message-circle')+'"></i>';}
+  updateProgress();
+}
+// ── 位置備註 ─────────────────────────────────────
+function openLocNote(id){
+  currentLocId=id;
+  const it=allItems().find(x=>x.id===id);
+  document.getElementById('loc-modal-title').textContent='📍 位置備註：'+it.name;
+  document.getElementById('loc-modal-ta').value=LOCATION_NOTES[it.code]||'';
+  document.getElementById('loc-modal-area').classList.add('show');
+}
+function closeLocModal(){document.getElementById('loc-modal-area').classList.remove('show');}
+function saveLocNote(){
+  const val=document.getElementById('loc-modal-ta').value.trim();
+  const it=allItems().find(x=>x.id===currentLocId); if(!it)return;
+  LOCATION_NOTES[it.code]=val;
+  saveLocationNotes();
+  closeLocModal();
+  // 更新 UI
+  const lb=document.getElementById('lb-'+currentLocId);
+  if(lb)lb.className='loc-btn'+(val?' has':'');
+  const lt=document.getElementById('lt-'+currentLocId);
+  if(lt)lt.innerHTML=val?`<div class="loc-tag">📍 ${val}</div>`:'';
+}
+function saveLocationNotes(){
+  try{localStorage.setItem('or_location_notes',JSON.stringify(LOCATION_NOTES));}
+  catch(e){console.warn('位置備註儲存失敗',e);}
+}
+function loadLocationNotes(){
+  try{
+    const d=localStorage.getItem('or_location_notes');
+    if(d)LOCATION_NOTES=JSON.parse(d);
+  }catch(e){console.warn('位置備註讀取失敗',e);}
+}
+
+function filterItems(){searchQ=document.getElementById('search-inp').value;renderList();}
+function loadArea(){ /* 護理師模式不需要此函式 */ }
+function clickSig(){ /* 護理師模式：身分已由選人確認，不需再輸入 */ }
+function saveSig(){ /* 護理師模式：自動簽名 */ }
+
+async function doSubmit(){
+  const all=allItems(); const anoms=all.filter(x=>x.note); const t=nowStr();
+  lastRecord={time:t,area:currentArea,items:JSON.parse(JSON.stringify(all)),anoms:anoms.length,by:sigName,anomDetails:anoms.map(x=>x.name+'：'+x.note)};
+
+  // 顯示儲存中
+  document.getElementById('sub-btn').disabled=true;
+  document.getElementById('saving-bar').classList.add('show');
+
+  // 儲存到 Firebase
+  const ok = await saveToFirebase(lastRecord);
+
+  document.getElementById('saving-bar').classList.remove('show');
+
+  // 儲存到本機
+  history.unshift(lastRecord);
+  saveToLocal(); renderHistory();
+
+  document.getElementById('main-area').style.display='none';
+  document.getElementById('done-wrap').classList.add('show');
+  const checked=all.filter(x=>x.checked).length;
+  document.getElementById('done-title').textContent=anoms.length?'盤點完成，有 '+anoms.length+' 項異常':'盤點完成，全數正常 ✓';
+  document.getElementById('done-sub').textContent='區域：'+currentArea+'\n盤點人：'+sigName+'\n時間：'+t+'\n完成：'+checked+'/'+all.length+' 項'+(ok?'\n✓ 已同步至雲端':'\n⚠ 雲端同步失敗，已存本機')+(anoms.length?'\n\n⚠ 異常：'+anoms.map(x=>x.name).join('、'):'');
+}
+
+function downloadExcel(rec){
+  if(!rec)rec=lastRecord; if(!rec){alert('找不到盤點記錄');return;}
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet([['財產編號','名稱','實際盤點狀況','備註'],...(rec.items||[]).map(it=>[it.code,it.name,it.checked?'已盤點':'未盤點',it.note||''])]);
+  ws['!cols']=[{wch:14},{wch:34},{wch:12},{wch:24},{wch:30}];
+  XLSX.utils.book_append_sheet(wb,ws,'盤點記錄');
+  const checked=(rec.items||[]).filter(x=>x.checked).length||rec.checked||0;
+  const total=(rec.items||[]).length||rec.total||0;
+  const ws2=XLSX.utils.aoa_to_sheet([['盤點日期',rec.time],['區域',rec.area],['盤點人員',rec.by],['總項目數',total],['已盤點',checked],['未盤點',total-checked],['異常項目',rec.anoms],['',''],...(rec.anomDetails||[]).map(d=>['',d])]);
+  ws2['!cols']=[{wch:12},{wch:40}];
+  XLSX.utils.book_append_sheet(wb,ws2,'摘要');
+  XLSX.writeFile(wb,'盤點記錄_'+rec.area+'_'+rec.time.replace(/[/:]/g,'-').replace(' ','_')+'.xlsx');
+}
+
+function resetApp(){
+  state={}; scanCount=0; currentNurse=''; sigDone=false;
+  document.getElementById('done-wrap').classList.remove('show');
+  document.getElementById('main-area').style.display='none';
+  document.getElementById('upload-section').style.display='block';
+  document.getElementById('start-btn').disabled=true;
+  document.getElementById('start-btn').innerHTML='<i class="ti ti-clipboard-check" style="font-size:18px"></i>開始盤點';
+  if(allNurseNames.length>0){
+    document.getElementById('nurse-section').style.display='block';
+    renderNurseGrid(allNurseNames);
+    document.getElementById('upload-result').classList.add('show');
+  } else {
+    document.getElementById('upload-result').classList.remove('show');
+    document.getElementById('nurse-section').style.display='none';
+    document.getElementById('file-inp').value='';
+  }
+}
+
+function processCode(rawCode){
+  const now=Date.now(); if(rawCode===lastScan&&now-lastScanTime<2000)return;
+  lastScan=rawCode; lastScanTime=now;
+
+  const raw=rawCode.trim().toUpperCase();
+  let code=raw, seqNo='';
+  if(raw.length>=9){ code=raw.slice(0,8); seqNo=raw.slice(8).padStart(6,'0'); }
+
+  // 依序嘗試：完整碼 → 8碼+補零序號 → 純8碼
+  let matches=LOOKUP[raw]||LOOKUP[code+seqNo]||LOOKUP[code];
+  if(!matches||!matches.length){showToast('err','非單位財產','編號：'+code+(seqNo?' 序號：'+seqNo:''),'ti-alert-circle');return;}
+  let hitCount=0;
+  matches.forEach(m=>{
+    initState(m.area); const it=state[m.area].find(x=>x.id===m.id);
+    if(it){
+      const was=it.checked; it.checked=true; if(!it.scanTime)it.scanTime=nowStr();
+      if(m.area===currentArea){
+        document.getElementById('chk-'+it.id).className='chk on';
+        document.getElementById('nm-'+it.id).className='item-name done';
+        const card=document.getElementById('card-'+it.id); if(card)card.className='item-card checked';
+        const row=document.getElementById('row-'+it.id); if(row){row.classList.add('flash');setTimeout(()=>row.classList.remove('flash'),800);}
+      }
+      if(!was)hitCount++;
+    }
+  });
+  scanCount++;
+  document.getElementById('scan-count').innerHTML='<i class="ti ti-circle-check" style="font-size:14px;color:var(--green)"></i>本次已掃描 '+scanCount+' 件';
+  updateProgress();
+  const m=matches[0];
+  if(hitCount>0)showToast('ok','✓ '+m.name,'編號 '+m.code+(m.seq?' · 序號 '+m.seq:''),'ti-circle-check');
+  else showToast('warn','已點過',m.name,'ti-alert-triangle');
+}
+
+function showToast(type,t1,t2,icon){
+  const wrap=document.getElementById('toast-wrap');
+  const el=document.createElement('div'); el.className='toast '+type;
+  el.innerHTML=`<i class="toast-icon ti ${icon||'ti-info-circle'}"></i><div class="toast-body"><div class="t1">${t1}</div><div class="t2">${t2}</div></div><button class="toast-close" onclick="this.parentElement.remove()">✕</button>`;
+  wrap.insertBefore(el,wrap.firstChild); if(wrap.children.length>4)wrap.lastChild.remove();
+  setTimeout(()=>{if(el.parentElement)el.remove();},4000);
+}
+
+function manualLookup(){
+  const v=document.getElementById('manual-inp').value.trim();
+  if(!v)return;
+  processCode(v);
+  document.getElementById('manual-inp').value='';
+  document.getElementById('manual-preview').textContent='';
+}
+
+// 外接掃描器通常以 Enter 結尾送出
+function handleManualKey(e){
+  if(e.key==='Enter'){e.preventDefault();manualLookup();}
+}
+
+// 即時預覽輸入的條碼格式
+function handleManualInput(val){
+  const v=val.trim().toUpperCase();
+  const prev=document.getElementById('manual-preview');
+  if(!v){prev.textContent='';return;}
+  if(v.length>=9){
+    const code=v.slice(0,8), seq=v.slice(8);
+    prev.textContent='財產編號：'+code+' · 序號：'+seq;
+  } else {
+    prev.textContent='財產編號：'+v+' ('+v.length+'/8碼)';
+  }
+}
+
+// ── 手機原生相機掃描（拍照辨識條碼）─────────────
+async function scanFromPhoto(input){
+  const file = input.files[0];
+  if(!file) return;
+  input.value=''; // 清空讓下次還能選
+
+  // 用 ZXing 從圖片辨識條碼
+  try{
+    if(typeof ZXing==='undefined'){
+      showToast('err','辨識程式未載入','請稍後再試','ti-alert-circle');
+      return;
+    }
+    const reader = new ZXing.BrowserMultiFormatReader();
+    const img = await createImageBitmap(file);
+    const canvas = document.createElement('canvas');
+    canvas.width = img.width; canvas.height = img.height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img,0,0);
+    const imageData = ctx.getImageData(0,0,img.width,img.height);
+    const luminanceSource = new ZXing.RGBLuminanceSource(imageData.data, img.width, img.height);
+    const binaryBitmap = new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(luminanceSource));
+    try{
+      const result = reader.decodeBitmap(binaryBitmap);
+      processCode(result.getText());
+    } catch(decodeErr){
+      // 嘗試縮小圖片後再試
+      showToast('warn','找不到條碼','請確認條碼清晰且在畫面中央，再試一次','ti-alert-triangle');
+    }
+  } catch(e){
+    showToast('err','辨識失敗',e.message,'ti-alert-circle');
+  }
+}
+
+async function toggleScan(){
+  if(scanning){stopScan();return;}
+  const status=document.getElementById('scan-status'),btnTxt=document.getElementById('scan-btn-txt');
+  status.textContent='請求相機權限…';
+  try{
+    if(typeof ZXing==='undefined'){status.textContent='掃描程式尚未載入';return;}
+    codeReader=new ZXing.BrowserMultiFormatReader();
+    const devices=await ZXing.BrowserCodeReader.listVideoInputDevices();
+    if(!devices||!devices.length){status.textContent='找不到相機裝置';return;}
+    const back=devices.find(d=>/(back|rear|environment)/i.test(d.label))||devices[devices.length-1];
+    status.textContent='相機啟動中…';
+    await codeReader.decodeFromVideoDevice(back.deviceId,'preview',(result)=>{if(result)processCode(result.getText());});
+    scanning=true; document.getElementById('scan-btn').classList.add('active'); btnTxt.textContent='停止掃描'; status.textContent='對準財產條碼即可自動點班'; document.getElementById('camera-hint').style.display='none'; const vw=document.getElementById('video-wrap'); if(vw)vw.style.display='block';
+  }catch(e){status.textContent='相機啟動失敗：'+e.message; document.getElementById('camera-hint').style.display='block';}
+}
+function stopScan(){if(codeReader)try{codeReader.reset();}catch(e){}scanning=false;document.getElementById('scan-btn').classList.remove('active');document.getElementById('scan-btn-txt').textContent='開啟即時掃描';document.getElementById('scan-status').textContent='相機已關閉';const vw=document.getElementById('video-wrap');if(vw)vw.style.display='none';}
+
+function showTab(t){
+  ['check','scan','hist'].forEach(p=>{document.getElementById('pg-'+p).classList.toggle('on',p===t);});
+  document.querySelectorAll('.tab').forEach((el,i)=>{el.classList.toggle('on',['check','scan','hist'][i]===t);});
+  if(t!=='scan'&&scanning)stopScan();
+  if(t==='hist'){renderHistory();loadFirebaseHistory();}
+}
+
+function renderHistory(){
+  const el=document.getElementById('hist-list');
+  if(!history.length){el.innerHTML='<div class="hist-empty"><i class="ti ti-history"></i>尚無盤點記錄<br><span style="font-size:12px">完成第一次盤點後會顯示在這裡</span></div>';return;}
+  el.innerHTML=history.map((h,i)=>{
+    const checked=h.checked!==undefined?h.checked:(h.items?h.items.filter(x=>x.checked).length:0);
+    const total=h.total!==undefined?h.total:(h.items?h.items.length:0);
+    return `<div class="hist-card ${h.anoms?'warn':'ok'}">
+      <div class="hist-top">
+        <div><div class="hist-date">${h.area}</div><div class="hist-area">${h.time}${h.fromCloud?' ☁️':''}</div></div>
+        <span class="pill ${h.anoms?'warn':'ok'}">${h.anoms?h.anoms+' 項異常':'全數正常'}</span>
+      </div>
+      <div class="hist-meta">
+        <i class="ti ti-user" style="font-size:13px"></i>${h.by}
+        <i class="ti ti-checkbox" style="font-size:13px"></i>${checked}/${total} 完成
+      </div>
+      ${h.anomDetails&&h.anomDetails.length?'<div class="hist-anoms">⚠ '+h.anomDetails.join('；')+'</div>':''}
+      ${h.items?`<button class="hist-dl" onclick="downloadExcel(history[${i}])"><i class="ti ti-download" style="font-size:13px"></i>下載 Excel</button>`:'<div style="font-size:11px;color:var(--text3);margin-top:4px">雲端記錄（無法下載 Excel）</div>'}
+    </div>`;
+  }).join('');
+}
+
+// ── 本地儲存 ──────────────────────────────────────
+function saveToLocal(){
+  try{
+    localStorage.setItem('or_raw',JSON.stringify(RAW));
+    localStorage.setItem('or_nurses',JSON.stringify(NURSES));
+    localStorage.setItem('or_history',JSON.stringify(history.slice(0,50)));
+    localStorage.setItem('or_rawmeta',JSON.stringify({name:window._lastFileName||'',time:nowStr()}));
+  }catch(e){console.warn('儲存失敗',e);}
+}
+function loadFromLocal(){
+  try{
+    const raw=localStorage.getItem('or_raw');
+    const nurses=localStorage.getItem('or_nurses');
+    const hist=localStorage.getItem('or_history');
+    const meta=localStorage.getItem('or_rawmeta');
+    if(raw){ RAW=JSON.parse(raw); LOOKUP=buildLookup(); }
+    if(nurses){
+      NURSES=JSON.parse(nurses);
+      allNurseNames=Object.keys(NURSES).sort();
+    }
+    if(meta&&allNurseNames.length>0){
+      const m=JSON.parse(meta);
+      const ti=Object.values(NURSES).reduce((s,a)=>s+a.length,0);
+      document.getElementById('ur-title').textContent='✓ 上次載入：'+(m.name||'財產報表');
+      document.getElementById('ur-sub').textContent='共 '+allNurseNames.length+' 位保管人，'+ti+' 種品項 · '+m.time;
+      document.getElementById('upload-result').classList.add('show');
+      document.getElementById('nurse-section').style.display='block';
+      renderNurseGrid(allNurseNames);
+    }
+    if(hist)history=JSON.parse(hist);
+  }catch(e){console.warn('讀取失敗',e);}
+}
+
+const _n=new Date();
+document.getElementById('topdate').textContent=(_n.getFullYear()-1911)+'年'+(_n.getMonth()+1)+'月'+_n.getDate()+'日';
+loadFromLocal();
+loadLocationNotes();
+renderHistory();
+// 非 HTTPS 時提示相機不可用
+if(location.protocol!=='https:' && location.hostname!=='localhost'){
+  document.getElementById('camera-hint').style.display='block';
+  document.getElementById('scan-status').textContent='⚠ 需要 HTTPS 才能使用相機';
+}
+</script>
+</body>
+</html>
