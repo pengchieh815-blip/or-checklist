@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>開刀房財產盤點</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.x/dist/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, collection, addDoc, getDocs, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+const firebaseConfig = {
+  apiKey:"AIzaSyBf7Of7ZQW3o_J3P0CXwiOCeqRsqqe-I4c",
+  authDomain:"or-checklist-9208e.firebaseapp.com",
+  projectId:"or-checklist-9208e",
+  storageBucket:"or-checklist-9208e.firebasestorage.app",
+  messagingSenderId:"698322497360",
+  appId:"1:698322497360:web:1c157351862511a5e40655"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+window._db=db; window._fsAdd=addDoc; window._fsColl=collection;
+window._fsQuery=query; window._fsGetDoc=getDocs; window._fsOrder=orderBy;
+window._firebaseReady=true;
+window.dispatchEvent(new Event('firebase-ready'));
+</script>
+<style>
+:root{
+  --navy:#0f2744;
+  --blue:#1d4ed8;
+  --blue-light:#3b82f6;
+  --green:#059669;
+  --green-light:#d1fae5;
+  --red:#dc2626;
+  --red-light:#fee2e2;
+  --amber:#d97706;
+  --sky:#0ea5e9;
+  --purple:#7c3aed;
+  --bg:#f8fafc;
+  --surface:#ffffff;
+  --border:#e2e8f0;
+  --border-strong:#cbd5e1;
+  --text:#0f172a;
+  --text2:#475569;
+  --text3:#94a3b8;
+  --radius:12px;
+  --shadow:0 1px 2px rgba(0,0,0,.06),0 2px 8px rgba(0,0,0,.06);
+  --shadow-md:0 4px 16px rgba(0,0,0,.1);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.app{max-width:430px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
+
+/* ── Header ── */
+.header{background:var(--navy);padding:16px 18px 14px;display:flex;align-items:center;justify-content:space-between}
+.header-brand{display:flex;align-items:center;gap:10px}
+.header-icon{width:38px;height:38px;background:rgba(255,255,255,.12);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px}
+.header-title{font-size:15px;font-weight:700;color:#fff}
+.header-date{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px}
+.db-badge{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.1);border-radius:99px;padding:4px 10px}
+.db-dot{width:7px;height:7px;border-radius:50%;background:#475569}
+.db-dot.ok{background:#34d399}
+.db-label{font-size:11px;color:rgba(255,255,255,.6);font-weight:500}
+
+/* ── Tabs ── */
+.tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border)}
+.tab{flex:1;padding:12px 8px 10px;text-align:center;font-size:11px;font-weight:600;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;letter-spacing:.3px;transition:all .15s}
+.tab.on{color:var(--blue);border-bottom-color:var(--blue)}
+.tab i{font-size:17px;display:block;margin-bottom:3px}
+.page{display:none;padding:14px;flex:1;overflow-y:auto}
+.page.on{display:block}
+
+/* ── Upload ── */
+.upload-wrap{padding:8px 0}
+.upload-hero{text-align:center;padding:20px 0 16px}
+.upload-emoji{font-size:44px;margin-bottom:10px}
+.upload-title{font-size:20px;font-weight:800;color:var(--navy);margin-bottom:6px}
+.upload-desc{font-size:13px;color:var(--text2);line-height:1.6}
+.upload-drop{border:2px dashed var(--border-strong);border-radius:var(--radius);padding:20px;text-align:center;cursor:pointer;background:var(--surface);margin:12px 0;transition:all .2s}
+.upload-drop:active{border-color:var(--blue);background:#eff6ff}
+.upload-drop i{font-size:28px;color:var(--text3);display:block;margin-bottom:6px}
+.upload-drop-t1{font-size:14px;font-weight:600;color:var(--text2);margin-bottom:3px}
+.upload-drop-t2{font-size:12px;color:var(--text3)}
+.upload-drop input{display:none}
+.upload-ok{background:#f0fdf4;border:1px solid #a7f3d0;border-radius:var(--radius);padding:12px 14px;margin-bottom:12px;display:none;align-items:center;gap:10px}
+.upload-ok.show{display:flex}
+.upload-ok-icon{width:32px;height:32px;background:var(--green);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;flex-shrink:0}
+.upload-ok-t1{font-size:13px;font-weight:700;color:#065f46}
+.upload-ok-t2{font-size:11px;color:#047857;margin-top:1px}
+.start-btn{width:100%;padding:15px;background:var(--navy);color:#fff;border:none;border-radius:var(--radius);font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .15s}
+.start-btn:disabled{opacity:.3;cursor:not-allowed}
+.start-btn:active{opacity:.85}
+
+/* ── Checklist toolbar ── */
+.cl-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.cl-info{flex:1;background:var(--surface);border-radius:10px;padding:9px 12px;box-shadow:var(--shadow);display:flex;align-items:center;gap:7px;min-width:0}
+.cl-info i{font-size:16px;color:var(--blue);flex-shrink:0}
+.cl-info-text{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cl-info-cnt{font-size:11px;color:var(--text3);flex-shrink:0}
+.tb-btn{padding:9px 11px;border:1px solid var(--border);border-radius:9px;background:var(--surface);cursor:pointer;font-size:12px;font-weight:600;color:var(--text2);display:flex;align-items:center;gap:4px;white-space:nowrap;box-shadow:var(--shadow)}
+.tb-btn.save{background:var(--green);color:#fff;border-color:var(--green)}
+
+/* ── Search ── */
+.search-wrap{position:relative;margin-bottom:12px}
+.search-wrap i{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:15px;pointer-events:none}
+.search-inp{width:100%;padding:10px 12px 10px 34px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;background:var(--surface);color:var(--text);box-shadow:var(--shadow)}
+.search-inp:focus{outline:none;border-color:var(--blue)}
+
+/* ── Progress ── */
+.prog-card{background:var(--surface);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;box-shadow:var(--shadow)}
+.prog-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
+.prog-stat{text-align:center;padding:10px 6px;border-radius:9px}
+.prog-stat.total{background:#f0f9ff;border:1px solid #bae6fd}
+.prog-stat.done{background:#f0fdf4;border:1px solid #a7f3d0}
+.prog-stat.undone{background:#fef2f2;border:1px solid #fecaca}
+.prog-stat-num{font-size:24px;font-weight:800;line-height:1;margin-bottom:3px}
+.prog-stat.total .prog-stat-num{color:var(--blue)}
+.prog-stat.done .prog-stat-num{color:var(--green)}
+.prog-stat.undone .prog-stat-num{color:var(--red)}
+.prog-stat-lbl{font-size:11px;font-weight:600}
+.prog-stat.total .prog-stat-lbl{color:#0369a1}
+.prog-stat.done .prog-stat-lbl{color:#047857}
+.prog-stat.undone .prog-stat-lbl{color:#b91c1c}
+.prog-bar-wrap{height:6px;background:#e2e8f0;border-radius:99px;overflow:hidden}
+.prog-bar-fill{height:6px;background:linear-gradient(90deg,var(--blue-light),var(--blue));border-radius:99px;transition:width .4s}
+
+/* ── Item cards ── */
+.item-card{background:var(--surface);border-radius:var(--radius);margin-bottom:8px;box-shadow:var(--shadow);overflow:hidden;border:1.5px solid transparent;transition:border-color .2s}
+.item-card.is-done{border-color:#a7f3d0}
+.item-card.is-notfound{border-color:#fca5a5}
+.item-top{padding:12px 14px 10px}
+.item-name{font-size:14px;font-weight:600;color:var(--text);line-height:1.3;margin-bottom:3px}
+.item-name.done{color:var(--text3);text-decoration:line-through}
+.item-code{font-size:11px;color:var(--text3);font-family:ui-monospace,monospace;letter-spacing:.2px}
+.item-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.tag{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:500;padding:2px 8px;border-radius:99px}
+.tag-loc{background:#e0f2fe;color:#0369a1}
+.tag-keeper{background:#ede9fe;color:#5b21b6}
+
+/* ── Action bar ── */
+.item-actions{display:flex;border-top:1px solid #f1f5f9}
+.act-btn{flex:1;padding:10px 4px;text-align:center;font-size:12px;font-weight:600;color:var(--text3);cursor:pointer;background:var(--surface);transition:all .12s;border:none;display:flex;align-items:center;justify-content:center;gap:4px}
+.act-btn:active{filter:brightness(.94)}
+.act-divider{width:1px;background:#f1f5f9;flex-shrink:0}
+.act-done{color:var(--green);background:#f0fdf4}
+.act-notfound{color:var(--red);background:#fef2f2}
+.act-loc-filled{color:var(--sky);background:#f0f9ff}
+.act-keeper-filled{color:var(--purple);background:#f5f3ff}
+
+/* ── Footer ── */
+.footer{padding:10px 0 28px}
+.saving-bar{background:#eff6ff;border:1px solid #bfdbfe;border-radius:9px;padding:9px 13px;font-size:12px;color:var(--blue);display:none;align-items:center;gap:8px;margin-bottom:9px}
+.saving-bar.show{display:flex}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{width:13px;height:13px;border:2px solid #bfdbfe;border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+.submit-btn{width:100%;padding:15px;background:var(--navy);color:#fff;border:none;border-radius:var(--radius);font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.submit-btn:active{opacity:.85}
+
+/* ── Modals ── */
+.modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:flex-end;justify-content:center;z-index:200;backdrop-filter:blur(3px)}
+.modal-bg.show{display:flex}
+.modal{background:var(--surface);border-radius:20px 20px 0 0;padding:20px 18px 36px;width:100%;max-width:430px;animation:slideUp .22s ease}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-pill{width:36px;height:4px;background:#e2e8f0;border-radius:2px;margin:0 auto 16px}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:4px}
+.modal-sub{font-size:12px;color:var(--text3);margin-bottom:12px}
+.modal-ta{width:100%;border:1.5px solid var(--border);border-radius:10px;padding:11px;font-size:14px;resize:none;height:80px;font-family:inherit;background:#f8fafc;color:var(--text)}
+.modal-ta:focus{outline:none;border-color:var(--blue)}
+.modal-btns{display:flex;gap:8px;margin-top:10px}
+.modal-btns button{flex:1;padding:12px;border-radius:10px;border:1.5px solid var(--border);font-size:14px;cursor:pointer;background:var(--surface);font-weight:600;color:var(--text)}
+.modal-btns .pri{background:var(--navy);color:#fff;border-color:var(--navy)}
+
+/* ── Done screen ── */
+.done-screen{display:none;flex-direction:column;align-items:center;padding:40px 20px 24px;text-align:center;gap:14px}
+.done-screen.show{display:flex}
+.done-circle{width:72px;height:72px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:36px;animation:pop .4s cubic-bezier(.34,1.56,.64,1)}
+@keyframes pop{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+.done-title{font-size:20px;font-weight:800;color:var(--navy)}
+.done-info{font-size:13px;color:var(--text2);line-height:1.8;white-space:pre-line;background:var(--surface);border-radius:var(--radius);padding:14px 16px;width:100%;text-align:left;box-shadow:var(--shadow)}
+.dl-btn{width:100%;padding:14px;background:var(--green);color:#fff;border:none;border-radius:var(--radius);font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.new-btn{width:100%;padding:12px;background:var(--surface);color:var(--text2);border:1.5px solid var(--border);border-radius:var(--radius);font-size:14px;font-weight:600;cursor:pointer}
+
+/* ── History ── */
+.hist-empty{padding:48px 20px;text-align:center;color:var(--text3)}
+.hist-empty i{font-size:44px;display:block;margin-bottom:10px;opacity:.3}
+.hist-card{background:var(--surface);border-radius:var(--radius);padding:14px 16px;margin-bottom:9px;box-shadow:var(--shadow);border-left:4px solid var(--border)}
+.hist-card.ok{border-left-color:var(--green)}
+.hist-card.warn{border-left-color:var(--amber)}
+.hist-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px}
+.hist-name{font-size:13px;font-weight:700}
+.hist-time{font-size:11px;color:var(--text3);margin-top:2px}
+.badge{font-size:11px;padding:3px 9px;border-radius:99px;font-weight:700}
+.badge-ok{background:#d1fae5;color:#065f46}
+.badge-warn{background:#fef3c7;color:#92400e}
+.hist-meta{font-size:12px;color:var(--text2);margin-bottom:6px;display:flex;gap:8px;align-items:center}
+.hist-dl{padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:#f8fafc;font-size:12px;cursor:pointer;color:var(--text2);font-weight:600;display:inline-flex;align-items:center;gap:5px}
+
+/* ── Empty search ── */
+.empty{padding:32px;text-align:center;color:var(--text3);font-size:13px}
+.empty i{font-size:30px;display:block;margin-bottom:8px;opacity:.3}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- Modals -->
+<div id="modal-loc" class="modal-bg">
+  <div class="modal">
+    <div class="modal-pill"></div>
+    <div class="modal-title" id="loc-title">📍 位置</div>
+    <div class="modal-sub">記錄財產放置位置，永久保存</div>
+    <textarea class="modal-ta" id="loc-ta" placeholder="例：手術室A 第3層架…"></textarea>
+    <div class="modal-btns">
+      <button onclick="closeModal('loc')">取消</button>
+      <button class="pri" onclick="saveLoc()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<div id="modal-keeper" class="modal-bg">
+  <div class="modal">
+    <div class="modal-pill"></div>
+    <div class="modal-title" id="keeper-title">👤 次要保管人</div>
+    <div class="modal-sub">記錄第二保管人，永久保存</div>
+    <textarea class="modal-ta" id="keeper-ta" placeholder="例：王護理師…" style="height:64px"></textarea>
+    <div class="modal-btns">
+      <button onclick="closeModal('keeper')">取消</button>
+      <button class="pri" onclick="saveKeeper()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-brand">
+    <div class="header-icon">🏥</div>
+    <div>
+      <div class="header-title">開刀房財產盤點</div>
+      <div class="header-date" id="header-date"></div>
+    </div>
+  </div>
+  <div class="db-badge">
+    <div class="db-dot" id="db-dot"></div>
+    <span class="db-label" id="db-label">連線中</span>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <div class="tab on" onclick="showTab('check')"><i class="ti ti-clipboard-check"></i>盤點清單</div>
+  <div class="tab" onclick="showTab('hist')"><i class="ti ti-history"></i>歷史記錄</div>
+</div>
+
+<!-- 盤點頁 -->
+<div id="pg-check" class="page on">
+
+  <!-- 上傳 -->
+  <div id="upload-section">
+    <div class="upload-hero">
+      <div class="upload-emoji">🏥</div>
+      <div class="upload-title">財產盤點系統</div>
+      <div class="upload-desc">上傳財產報表即可開始逐項盤點<br>支援 .xls / .xlsx 格式</div>
+    </div>
+    <div class="upload-drop" onclick="document.getElementById('file-inp').click()">
+      <input type="file" id="file-inp" accept=".xls,.xlsx" onchange="handleFile(this.files[0])">
+      <i class="ti ti-file-spreadsheet"></i>
+      <div class="upload-drop-t1">點此上傳財產報表</div>
+      <div class="upload-drop-t2">.xls 或 .xlsx</div>
+    </div>
+    <div class="upload-ok" id="upload-ok">
+      <div class="upload-ok-icon"><i class="ti ti-check"></i></div>
+      <div>
+        <div class="upload-ok-t1" id="upload-t1"></div>
+        <div class="upload-ok-t2" id="upload-t2"></div>
+      </div>
+    </div>
+    <button class="start-btn" id="start-btn" disabled onclick="startChecklist()">
+      <i class="ti ti-clipboard-check" style="font-size:18px"></i>開始盤點
+    </button>
+  </div>
+
+  <!-- 主畫面 -->
+  <div id="main-area" style="display:none">
+    <div class="cl-toolbar">
+      <div class="cl-info">
+        <i class="ti ti-clipboard-list"></i>
+        <span class="cl-info-text">財產盤點清單</span>
+        <span class="cl-info-cnt" id="cl-cnt"></span>
+      </div>
+      <button class="tb-btn save" id="save-btn" onclick="saveProgress()">
+        <i class="ti ti-device-floppy" style="font-size:14px"></i>儲存
+      </button>
+      <button class="tb-btn" onclick="showUpload()">
+        <i class="ti ti-refresh" style="font-size:14px"></i>換報表
+      </button>
+    </div>
+    <div class="search-wrap">
+      <i class="ti ti-search"></i>
+      <input class="search-inp" id="search-inp" placeholder="搜尋品項名稱或財產編號…" oninput="filterItems()">
+    </div>
+    <div class="prog-card">
+      <div class="prog-stats">
+        <div class="prog-stat total">
+          <div class="prog-stat-num" id="prog-total">0</div>
+          <div class="prog-stat-lbl">應盤</div>
+        </div>
+        <div class="prog-stat done">
+          <div class="prog-stat-num" id="prog-done">0</div>
+          <div class="prog-stat-lbl">已盤</div>
+        </div>
+        <div class="prog-stat undone">
+          <div class="prog-stat-num" id="prog-undone">0</div>
+          <div class="prog-stat-lbl">未盤</div>
+        </div>
+      </div>
+      <div class="prog-bar-wrap">
+        <div class="prog-bar-fill" id="prog-fill" style="width:0%"></div>
+      </div>
+    </div>
+    <div id="item-list"></div>
+    <div class="footer">
+      <div class="saving-bar" id="saving-bar"><div class="spinner"></div>正在儲存至雲端…</div>
+      <button class="submit-btn" onclick="doSubmit()">
+        <i class="ti ti-send" style="font-size:16px"></i>送出並下載 Excel
+      </button>
+    </div>
+  </div>
+
+  <!-- 完成畫面 -->
+  <div id="done-screen" class="done-screen">
+    <div class="done-circle">✓</div>
+    <div class="done-title" id="done-title">盤點完成</div>
+    <div class="done-info" id="done-info"></div>
+    <button class="dl-btn" onclick="downloadExcel()">
+      <i class="ti ti-file-spreadsheet" style="font-size:17px"></i>下載 Excel 盤點記錄
+    </button>
+    <button class="new-btn" onclick="resetApp()">重新盤點 / 換報表</button>
+  </div>
+</div>
+
+<!-- 歷史頁 -->
+<div id="pg-hist" class="page">
+  <div id="hist-list"></div>
+</div>
+
+</div><!-- /app -->
+
+<script>
+// ── 狀態 ─────────────────────────────────────────
+let NURSES={}, allNurseNames=[], currentNurse='';
+let state={}, searchQ='';
+let currentLocId=null;
+let LOCATION_NOTES={}, KEEPER_NOTES={};
+let history=[], lastRecord=null;
+
+// ── Firebase ──────────────────────────────────────
+function checkDb(){
+  const dot=document.getElementById('db-dot');
+  const lbl=document.getElementById('db-label');
+  if(window._firebaseReady){dot.className='db-dot ok';lbl.textContent='已連線';}
+  else{lbl.textContent='未連線';}
+}
+setTimeout(checkDb,2500);
+
+async function saveToFirebase(rec){
+  if(!window._firebaseReady||!window._db)return false;
+  try{
+    await window._fsAdd(window._fsColl(window._db,'checklist_records'),{
+      time:rec.time,area:rec.area,by:rec.by,
+      total:rec.items.length,
+      checked:rec.items.filter(x=>x.checked||x.notfound).length,
+      anoms:0,anomDetails:[],
+      deviceId:getDeviceId(),createdAt:new Date()
+    });
+    return true;
+  }catch(e){console.error(e);return false;}
+}
+function getDeviceId(){
+  let id=localStorage.getItem('or_device_id');
+  if(!id){id='dev_'+Math.random().toString(36).slice(2,10);localStorage.setItem('or_device_id',id);}
+  return id;
+}
+
+// ── 上傳報表 ──────────────────────────────────────
+function handleFile(file){
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+      const sample=rows[0]||{},keys=Object.keys(sample);
+      const col=n=>keys.find(k=>k.includes(n))||'';
+      const cCode=col('財產編號'),cName=col('名稱'),cSeq=col('財產序號')||col('序號')||'';
+      const cUnit=col('財產單位')||col('單位'),cLoc=col('置放地點')||col('地點'),cKeeper=col('保管人');
+      if(!cCode||!cName){alert('找不到「財產編號」或「名稱」欄位');return;}
+      const all=[];
+      rows.forEach(r=>{
+        const name=(r[cName]||'').toString().trim();
+        const code=(r[cCode]||'').toString().trim();
+        const unit=(r[cUnit]||'').toString().trim();
+        const seq=cSeq?(r[cSeq]||'').toString().trim().padStart(6,'0'):'';
+        if(!name||!code)return;
+        all.push({name,code,seq,unit,fullCode:seq?code+'-'+seq:code});
+      });
+      NURSES={'__ALL__':all};
+      allNurseNames=['__ALL__'];
+      window._lastFileName=file.name;
+      saveToLocal();
+      document.getElementById('upload-t1').textContent='✓ 已載入「'+file.name+'」';
+      document.getElementById('upload-t2').textContent='共 '+all.length+' 件財產';
+      document.getElementById('upload-ok').classList.add('show');
+      document.getElementById('start-btn').disabled=false;
+      document.getElementById('cl-cnt').textContent=all.length+' 件';
+    }catch(err){alert('讀取失敗：'+err.message);}
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function startChecklist(){
+  state={}; searchQ=''; currentNurse='__ALL__';
+  document.getElementById('upload-section').style.display='none';
+  document.getElementById('main-area').style.display='block';
+  document.getElementById('done-screen').classList.remove('show');
+  document.getElementById('prog-total').textContent=(NURSES['__ALL__']||[]).length;
+  initState(); renderList(); updateProgress();
+}
+
+function showUpload(){
+  document.getElementById('main-area').style.display='none';
+  document.getElementById('upload-section').style.display='block';
+}
+
+// ── 狀態管理 ──────────────────────────────────────
+function initState(){
+  if(!state[currentNurse]){
+    state[currentNurse]=(NURSES[currentNurse]||[]).map((it,i)=>({
+      id:'item_'+i,name:it.name,code:it.code,seq:it.seq||'',
+      fullCode:it.fullCode||it.code,unit:it.unit,
+      checked:false,notfound:false,scanTime:''
+    }));
+  }
+}
+function allItems(){return state[currentNurse]||[];}
+function filteredItems(){
+  const q=searchQ.toLowerCase();
+  if(!q)return allItems();
+  return allItems().filter(it=>
+    it.name.toLowerCase().includes(q)||
+    it.code.toLowerCase().includes(q)||
+    it.seq.includes(q)||
+    it.fullCode.toLowerCase().includes(q)||
+    (LOCATION_NOTES[it.fullCode]||'').toLowerCase().includes(q)
+  );
+}
+function nowStr(){const n=new Date();return n.getFullYear()+'/'+(n.getMonth()+1)+'/'+n.getDate()+' '+n.getHours()+':'+String(n.getMinutes()).padStart(2,'0');}
+
+// ── 進度 ──────────────────────────────────────────
+function updateProgress(){
+  const all=allItems();
+  const found=all.filter(x=>x.checked).length;
+  const notfound=all.filter(x=>x.notfound).length;
+  const total=all.length;
+  const handled=found+notfound;
+  const undone=total-handled;
+  const pct=total?Math.round(handled/total*100):0;
+  document.getElementById('prog-total').textContent=total;
+  document.getElementById('prog-done').textContent=handled;
+  document.getElementById('prog-undone').textContent=undone;
+  document.getElementById('prog-fill').style.width=pct+'%';
+}
+
+// ── 清單渲染 ──────────────────────────────────────
+function renderList(){
+  const list=document.getElementById('item-list');
+  const items=filteredItems();
+  list.innerHTML='';
+  if(!items.length){
+    list.innerHTML='<div class="empty"><i class="ti ti-search"></i>找不到符合的品項</div>';
+    return;
+  }
+  items.forEach(it=>{
+    const loc=LOCATION_NOTES[it.fullCode]||'';
+    const keeper=KEEPER_NOTES[it.fullCode]||'';
+    const card=document.createElement('div');
+    const cardCls=it.checked?'item-card is-done':it.notfound?'item-card is-notfound':'item-card';
+    card.className=cardCls;
+    card.id='card-'+it.id;
+    card.innerHTML=`
+      <div class="item-top">
+        <div class="item-name${(it.checked||it.notfound)?' done':''}" id="nm-${it.id}">${it.name}</div>
+        <div class="item-code">${it.code}${it.seq?' · '+parseInt(it.seq)+'號':''}${it.unit?' · '+it.unit:''}</div>
+        ${(loc||keeper)?`<div class="item-tags">
+          ${loc?`<span class="tag tag-loc" id="loc-tag-${it.id}">📍 ${loc}</span>`:`<span id="loc-tag-${it.id}"></span>`}
+          ${keeper?`<span class="tag tag-keeper" id="keeper-tag-${it.id}">👤 ${keeper}</span>`:`<span id="keeper-tag-${it.id}"></span>`}
+        </div>`:`<div style="margin-top:4px"><span id="loc-tag-${it.id}"></span><span id="keeper-tag-${it.id}"></span></div>`}
+      </div>
+      <div class="item-actions">
+        <div class="act-btn${it.checked?' act-done':''}" id="act-found-${it.id}" onclick="setStatus('${it.id}','found')">
+          <i class="ti ti-${it.checked?'circle-check':'circle'}" style="font-size:15px"></i>${it.checked?'已盤':'已盤'}
+        </div>
+        <div class="act-divider"></div>
+        <div class="act-btn${it.notfound?' act-notfound':''}" id="act-nf-${it.id}" onclick="setStatus('${it.id}','notfound')">
+          <i class="ti ti-${it.notfound?'circle-x':'circle-x'}" style="font-size:15px"></i>${it.notfound?'找不到':'找不到'}
+        </div>
+        <div class="act-divider"></div>
+        <div class="act-btn${loc?' act-loc-filled':''}" id="lb-${it.id}" onclick="openLocModal('${it.id}')">
+          <i class="ti ti-map-pin" style="font-size:15px"></i>${loc?'已填':'位置'}
+        </div>
+        <div class="act-divider"></div>
+        <div class="act-btn${keeper?' act-keeper-filled':''}" id="kb-${it.id}" onclick="openKeeperModal('${it.id}')">
+          <i class="ti ti-user" style="font-size:15px"></i>${keeper?'已填':'次保管'}
+        </div>
+      </div>`;
+    list.appendChild(card);
+  });
+}
+
+function setStatus(id,status){
+  const it=allItems().find(x=>x.id===id);if(!it)return;
+  if(status==='found'){it.checked=!it.checked;it.notfound=false;if(it.checked&&!it.scanTime)it.scanTime=nowStr();}
+  else{it.notfound=!it.notfound;it.checked=false;}
+  const card=document.getElementById('card-'+id);
+  if(card)card.className=it.checked?'item-card is-done':it.notfound?'item-card is-notfound':'item-card';
+  const nm=document.getElementById('nm-'+id);
+  if(nm)nm.className='item-name'+(it.checked||it.notfound?' done':'');
+  const af=document.getElementById('act-found-'+id);
+  if(af){af.className='act-btn'+(it.checked?' act-done':'');af.innerHTML=`<i class="ti ti-${it.checked?'circle-check':'circle'}" style="font-size:15px"></i>${it.checked?'已盤':'已盤'}`;}
+  const an=document.getElementById('act-nf-'+id);
+  if(an){an.className='act-btn'+(it.notfound?' act-notfound':'');an.innerHTML=`<i class="ti ti-circle-x" style="font-size:15px"></i>${it.notfound?'找不到':'找不到'}`;}
+  updateProgress();
+  autoSave();
+}
+
+function filterItems(){searchQ=document.getElementById('search-inp').value;renderList();}
+
+// ── 位置 Modal ────────────────────────────────────
+function openLocModal(id){
+  currentLocId=id;
+  const it=allItems().find(x=>x.id===id);
+  document.getElementById('loc-title').textContent='📍 位置：'+it.name;
+  document.getElementById('loc-ta').value=LOCATION_NOTES[it.fullCode]||'';
+  document.getElementById('modal-loc').classList.add('show');
+}
+function saveLoc(){
+  const val=document.getElementById('loc-ta').value.trim();
+  const it=allItems().find(x=>x.id===currentLocId);if(!it)return;
+  LOCATION_NOTES[it.fullCode]=val;
+  saveLocNotes();closeModal('loc');
+  const lb=document.getElementById('lb-'+currentLocId);
+  if(lb){lb.className='act-btn'+(val?' act-loc-filled':'');lb.innerHTML=`<i class="ti ti-map-pin" style="font-size:15px"></i>${val?'已填':'位置'}`;}
+  const tag=document.getElementById('loc-tag-'+currentLocId);
+  if(tag)tag.innerHTML=val?`<span class="tag tag-loc">📍 ${val}</span>`:'';
+  autoSave();
+}
+
+// ── 次保管 Modal ──────────────────────────────────
+function openKeeperModal(id){
+  currentLocId=id;
+  const it=allItems().find(x=>x.id===id);
+  document.getElementById('keeper-title').textContent='👤 次要保管人：'+it.name;
+  document.getElementById('keeper-ta').value=KEEPER_NOTES[it.fullCode]||'';
+  document.getElementById('modal-keeper').classList.add('show');
+}
+function saveKeeper(){
+  const val=document.getElementById('keeper-ta').value.trim();
+  const it=allItems().find(x=>x.id===currentLocId);if(!it)return;
+  KEEPER_NOTES[it.fullCode]=val;
+  saveKeeperNotes();closeModal('keeper');
+  const kb=document.getElementById('kb-'+currentLocId);
+  if(kb){kb.className='act-btn'+(val?' act-keeper-filled':'');kb.innerHTML=`<i class="ti ti-user" style="font-size:15px"></i>${val?'已填':'次保管'}`;}
+  const tag=document.getElementById('keeper-tag-'+currentLocId);
+  if(tag)tag.innerHTML=val?`<span class="tag tag-keeper">👤 ${val}</span>`:'';
+  autoSave();
+}
+
+function closeModal(type){document.getElementById('modal-'+type).classList.remove('show');}
+
+// ── 儲存進度 ──────────────────────────────────────
+function autoSave(){
+  try{
+    if(!state[currentNurse])return;
+    localStorage.setItem('or_progress',JSON.stringify({nurse:currentNurse,state:state[currentNurse],time:nowStr()}));
+  }catch(e){}
+}
+function saveProgress(){
+  autoSave();
+  const btn=document.getElementById('save-btn');
+  btn.innerHTML='<i class="ti ti-check" style="font-size:14px"></i>已儲存';
+  setTimeout(()=>{btn.innerHTML='<i class="ti ti-device-floppy" style="font-size:14px"></i>儲存';},2000);
+}
+function loadProgress(){
+  try{
+    const p=localStorage.getItem('or_progress');
+    if(!p)return false;
+    const d=JSON.parse(p);
+    if(d.nurse!==currentNurse)return false;
+    state[currentNurse]=d.state;
+    return d.time;
+  }catch(e){return false;}
+}
+function clearProgress(){try{localStorage.removeItem('or_progress');}catch(e){}}
+
+// ── 送出 ──────────────────────────────────────────
+async function doSubmit(){
+  const all=allItems();const t=nowStr();
+  lastRecord={time:t,area:'財產盤點',by:'盤點人員',items:JSON.parse(JSON.stringify(all)),anoms:0,anomDetails:[]};
+  document.getElementById('saving-bar').classList.add('show');
+  const ok=await saveToFirebase(lastRecord);
+  document.getElementById('saving-bar').classList.remove('show');
+  history.unshift(lastRecord);saveToLocal();clearProgress();renderHistory();
+  document.getElementById('main-area').style.display='none';
+  document.getElementById('done-screen').classList.add('show');
+  const found=all.filter(x=>x.checked).length;
+  const notfound=all.filter(x=>x.notfound).length;
+  document.getElementById('done-title').textContent='盤點完成 ✓';
+  document.getElementById('done-info').textContent='時間：'+t+'\n已盤：'+found+' 件\n找不到：'+notfound+' 件\n未處理：'+(all.length-found-notfound)+' 件'+(ok?'\n✓ 已同步雲端':'\n（已存本機）');
+}
+
+// ── Excel ──────────────────────────────────────────
+function downloadExcel(rec){
+  if(!rec)rec=lastRecord;if(!rec){alert('找不到記錄');return;}
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet([
+    ['財產編號','序號','名稱','盤點狀況','位置','次要保管人'],
+    ...(rec.items||[]).map(it=>[
+      it.code,it.seq?parseInt(it.seq):'',it.name,
+      it.checked?'已盤':it.notfound?'找不到':'未盤點',
+      LOCATION_NOTES[it.fullCode]||'',
+      KEEPER_NOTES[it.fullCode]||''
+    ])
+  ]);
+  ws['!cols']=[{wch:12},{wch:6},{wch:30},{wch:8},{wch:22},{wch:14}];
+  XLSX.utils.book_append_sheet(wb,ws,'盤點記錄');
+  const found=(rec.items||[]).filter(x=>x.checked).length;
+  const nf=(rec.items||[]).filter(x=>x.notfound).length;
+  const ws2=XLSX.utils.aoa_to_sheet([
+    ['盤點時間',rec.time],['總件數',(rec.items||[]).length],
+    ['已盤',found],['找不到',nf],['未處理',(rec.items||[]).length-found-nf]
+  ]);
+  ws2['!cols']=[{wch:10},{wch:20}];
+  XLSX.utils.book_append_sheet(wb,ws2,'摘要');
+  XLSX.writeFile(wb,'盤點記錄_'+rec.time.replace(/[/:]/g,'-').replace(' ','_')+'.xlsx');
+}
+
+function resetApp(){
+  state={};clearProgress();
+  document.getElementById('done-screen').classList.remove('show');
+  document.getElementById('main-area').style.display='none';
+  document.getElementById('upload-section').style.display='block';
+  if(allNurseNames.length>0&&NURSES['__ALL__']){
+    document.getElementById('upload-ok').classList.add('show');
+    document.getElementById('start-btn').disabled=false;
+  }
+}
+
+// ── 歷史 ──────────────────────────────────────────
+function renderHistory(){
+  const el=document.getElementById('hist-list');
+  if(!history.length){el.innerHTML='<div class="hist-empty"><i class="ti ti-history"></i>尚無盤點記錄</div>';return;}
+  el.innerHTML=history.map((h,i)=>{
+    const items=h.items||[];
+    const found=items.filter(x=>x.checked).length;
+    const nf=items.filter(x=>x.notfound).length;
+    const total=items.length||h.total||0;
+    const handled=found+nf;
+    const ok=handled===total;
+    return`<div class="hist-card ${ok?'ok':'warn'}">
+      <div class="hist-top">
+        <div><div class="hist-name">${h.time}</div></div>
+        <span class="badge ${ok?'badge-ok':'badge-warn'}">${ok?'全數完成':handled+'/'+total}</span>
+      </div>
+      <div class="hist-meta">
+        <span>✓ 已盤 ${found}</span>
+        <span>✗ 找不到 ${nf}</span>
+        <span>— 未處理 ${total-handled}</span>
+      </div>
+      ${h.items?`<button class="hist-dl" onclick="downloadExcel(history[${i}])"><i class="ti ti-download" style="font-size:13px"></i>下載 Excel</button>`:''}
+    </div>`;
+  }).join('');
+}
+
+function showTab(t){
+  ['check','hist'].forEach(p=>document.getElementById('pg-'+p).classList.toggle('on',p===t));
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('on',['check','hist'][i]===t));
+  if(t==='hist')renderHistory();
+}
+
+// ── 本地儲存 ──────────────────────────────────────
+function saveToLocal(){
+  try{
+    localStorage.setItem('or_nurses',JSON.stringify(NURSES));
+    localStorage.setItem('or_history',JSON.stringify(history.slice(0,50)));
+    localStorage.setItem('or_rawmeta',JSON.stringify({name:window._lastFileName||'',time:nowStr()}));
+  }catch(e){}
+}
+function saveLocNotes(){try{localStorage.setItem('or_loc_notes',JSON.stringify(LOCATION_NOTES));}catch(e){}}
+function saveKeeperNotes(){try{localStorage.setItem('or_keeper_notes',JSON.stringify(KEEPER_NOTES));}catch(e){}}
+function loadFromLocal(){
+  try{
+    const nurses=localStorage.getItem('or_nurses');
+    const hist=localStorage.getItem('or_history');
+    const meta=localStorage.getItem('or_rawmeta');
+    const loc=localStorage.getItem('or_loc_notes');
+    const kp=localStorage.getItem('or_keeper_notes');
+    if(nurses){NURSES=JSON.parse(nurses);allNurseNames=Object.keys(NURSES);}
+    if(loc)LOCATION_NOTES=JSON.parse(loc);
+    if(kp)KEEPER_NOTES=JSON.parse(kp);
+    if(hist)history=JSON.parse(hist);
+    if(meta&&NURSES['__ALL__']){
+      const m=JSON.parse(meta);
+      document.getElementById('upload-t1').textContent='✓ 上次載入：'+(m.name||'財產報表');
+      document.getElementById('upload-t2').textContent=(NURSES['__ALL__']||[]).length+' 件財產 · '+m.time;
+      document.getElementById('upload-ok').classList.add('show');
+      document.getElementById('start-btn').disabled=false;
+      document.getElementById('cl-cnt').textContent=(NURSES['__ALL__']||[]).length+' 件';
+    }
+  }catch(e){}
+}
+
+// ── 初始化 ────────────────────────────────────────
+const _n=new Date();
+document.getElementById('header-date').textContent=(_n.getFullYear()-1911)+'年'+(_n.getMonth()+1)+'月'+_n.getDate()+'日';
+loadFromLocal();
+renderHistory();
+</script>
+</body>
+</html>
